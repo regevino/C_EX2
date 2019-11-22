@@ -9,7 +9,7 @@
 struct Vertex
 {
     unsigned int key;
-    struct Vertex *children;
+    struct Vertex *children[];
 };
 
 int failureExit(FILE *filePointer)
@@ -17,6 +17,16 @@ int failureExit(FILE *filePointer)
     fprintf(stderr, INVALID_INPUT_MSG);
     fclose(filePointer);
     return EXIT_FAILURE;
+}
+
+int checkVertexNum(FILE *filePointer, char *line)
+{
+    int vertexCounter = 0;
+    while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
+    {
+        vertexCounter++;
+    }
+    return vertexCounter;
 }
 
 int isDigit(char c)
@@ -28,7 +38,7 @@ int parseFile(const char *filename)
 {
     FILE *filePointer = fopen(filename, "r");
 
-    //Check if file exists or if it is empty:
+    //Edge case: Check if file exists:
     if (filePointer == NULL)
     {
         fprintf(stderr, "FILE DOESN'T EXIST OR IS EMPTY");//TODO change to failureExit
@@ -36,12 +46,18 @@ int parseFile(const char *filename)
         return EXIT_FAILURE;
     }
 
-    //Get number of vertexes from file:
+    //Edge case: Check if file is empty.
+    //If not then get number of vertexes from file:
     char line[MAX_LINE_LENGTH];
-    fgets(line, MAX_LINE_LENGTH, filePointer);
+    if (fgets(line, MAX_LINE_LENGTH, filePointer) == NULL)
+    {
+        fprintf(stderr, "FILE IS EMPTY");//TODO change to failureExit
+        fclose(filePointer);
+        return EXIT_FAILURE;
+    }
 
-    //Check if number of vertexes is a whole number:
-    for (int i = 0; i < MAX_LINE_LENGTH && line[i] != '\0'; i++)
+    //Edge case: Check if number of vertexes is a whole number:
+    for (int i = 0; i < MAX_LINE_LENGTH && line[i] != '\r' && line[i] != '\n'; i++)
     {
         if (!isDigit(line[i]))
         {
@@ -61,22 +77,27 @@ int parseFile(const char *filename)
         return EXIT_FAILURE;
     }
 
-    int vertexCounter = 0;
-    while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
-    {
-
-        vertexCounter++;
-    }
+    //Edge case: Check if vertexNum matches number of vertexes:
+    int vertexCounter = checkVertexNum(filePointer, line);
 
     if (vertexCounter != vertexNum)
     {
+        fprintf(stderr, "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER");//TODO change to failureExit
+        fclose(filePointer);
+        return EXIT_FAILURE;
+    }
 
+    rewind(filePointer);
+    int key = 0;
+    while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
+    {
+        key++;
+        fprintf(stderr, "%s", line);
     }
 
     fclose(filePointer);
     return 0;
 }
-
 
 int main(int argc, char *argv[])
 {
