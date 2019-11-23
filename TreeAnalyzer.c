@@ -13,13 +13,18 @@ struct Vertex
 {
     struct Vertex *children[MAX_CHILDREN];
     struct Vertex *father;
-    unsigned int key;
+    int key;
 };
 
-int failureExit(FILE *filePointer)
+struct Tree
+{
+    struct Vertex **vertices;
+    int vertexCounter;
+};
+
+int failureExit()
 {
     fprintf(stderr, INVALID_INPUT_MSG);
-    fclose(filePointer);
     return EXIT_FAILURE;
 }
 
@@ -38,29 +43,47 @@ int isDigit(char c)
     return c >= '0' && c <= '9';
 }
 
-int checkChildren(char *token, FILE *filePointer)
+int checkChildren(char *token)
 {
     for (int i = 0; i < MAX_CHILDREN && token[i] != '\0'; i++)
     {
         if (!isDigit(token[i]) && token[i] != '\r' && token[i] != '\n')
         {
             fprintf(stderr, "ILLEGAL CHILD");//TODO change to failureExit
-            fclose(filePointer);
             return EXIT_FAILURE;
         }
     }
     return SUCCESS;
 }
 
-int parseFile(const char *filename)
+int isInCheckedTokens(char *checkedTokens[], char *token, int length)
 {
-    FILE *filePointer = fopen(filename, "r");
+    for (int i = 0; i < length; i++)
+    {
+        if (token[strlen(token) - 1] == '\n')
+        {
+            token[strlen(token) - 1] = 0;
+        }
+        if (token[strlen(token) - 1] == '\r')
+        {
+            token[strlen(token) - 1] = 0;
+        }
 
+        if (strncmp(checkedTokens[i], token, MAX_CHILDREN) == 0)
+        {
+            fprintf(stderr, "CHILD APPEARS TWICE");//TODO change to failureExit
+            return EXIT_FAILURE;
+        }
+    }
+    return SUCCESS;
+}
+
+int parseFile(FILE *filePointer)
+{
     //Edge case: Check if file exists:
     if (filePointer == NULL)
     {
         fprintf(stderr, "FILE DOESN'T EXIST OR IS EMPTY");//TODO change to failureExit
-        fclose(filePointer);
         return EXIT_FAILURE;
     }
 
@@ -70,7 +93,6 @@ int parseFile(const char *filename)
     if (fgets(line, MAX_LINE_LENGTH, filePointer) == NULL)
     {
         fprintf(stderr, "FILE IS EMPTY");//TODO change to failureExit
-        fclose(filePointer);
         return EXIT_FAILURE;
     }
 
@@ -80,18 +102,16 @@ int parseFile(const char *filename)
         if (!isDigit(line[i]))
         {
             fprintf(stderr, "NUMBER OF VERTEXES IS NOT AN INTEGER");//TODO change to failureExit
-            fclose(filePointer);
             return EXIT_FAILURE;
         }
     }
 
-    long int vertexNum = strtol(line, NULL, 10);
+    int vertexNum = (int)strtol(line, NULL, 10);
 
     //Edge case: Check if vertexNum is 0:
     if (vertexNum == 0)
     {
         fprintf(stderr, "NUMBER OF VERTEXES IS ZERO");//TODO change to failureExit
-        fclose(filePointer);
         return EXIT_FAILURE;
     }
 
@@ -100,15 +120,15 @@ int parseFile(const char *filename)
 
     if (vertexCounter != vertexNum)
     {
-        fprintf(stderr, "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER");//TODO change to failureExit
-        fclose(filePointer);
+        fprintf(stderr,
+                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER");//TODO change to failureExit
         return EXIT_FAILURE;
     }
 
     rewind(filePointer);
     fgets(line, MAX_LINE_LENGTH, filePointer);
 
-    int key = 0;
+    int key = 0, tokenCounter = 1;
     while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
     {
         char *token = strtok(line, " ");
@@ -120,20 +140,40 @@ int parseFile(const char *filename)
             continue;
         }
 
+        int i = 0;
+        char *checkedTokens[MAX_CHILDREN] = {NULL};
         while (token != NULL)
         {
-            if (checkChildren(token, filePointer))
+            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i))
             {
                 return EXIT_FAILURE;
             }
+            checkedTokens[i] = token;
             token = strtok(NULL, " ");
+            tokenCounter++;
+            i++;
         }
         key++;
         fprintf(stderr, "%s\n", line);
     }
 
-    fclose(filePointer);
+    if (tokenCounter != vertexNum)
+    {
+        fprintf(stderr,
+                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER");//TODO change to failureExit
+        return EXIT_FAILURE;
+    }
     return SUCCESS;
+}
+
+void processTree(FILE *filePointer)
+{
+    char line[MAX_LINE_LENGTH];
+    struct Tree tree;
+
+    fgets(line, MAX_LINE_LENGTH, filePointer);
+    tree.vertexCounter = (int) strtol(line, NULL, 10);
+
 }
 
 int main(int argc, char *argv[])
@@ -143,5 +183,16 @@ int main(int argc, char *argv[])
         fprintf(stderr, ARG_ERR_MSG);
         return EXIT_FAILURE;
     }
-    return parseFile(argv[1]);
+
+    FILE *filePointer = fopen(argv[1], "r");
+    if (parseFile(filePointer))
+    {
+        fclose(filePointer);
+        return EXIT_FAILURE;
+    }
+
+    rewind(filePointer);
+    processTree(filePointer);
+    fclose(filePointer);
+    return SUCCESS;
 }
