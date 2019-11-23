@@ -5,11 +5,15 @@
 
 #define ARG_ERR_MSG "Usage: TreeAnalyzer <Graph File Path> <First Vertex> <Second Vertex>\n"
 #define INVALID_INPUT_MSG "Invalid input\n"
-#define MAX_LINE_LENGTH 1024
+#define MAX_LINE_LENGTH 1025
+#define MAX_CHILDREN 512
+#define SUCCESS 0
+
 struct Vertex
 {
+    struct Vertex *children[MAX_CHILDREN];
+    struct Vertex *father;
     unsigned int key;
-    struct Vertex *children[];
 };
 
 int failureExit(FILE *filePointer)
@@ -32,6 +36,20 @@ int checkVertexNum(FILE *filePointer, char *line)
 int isDigit(char c)
 {
     return c >= '0' && c <= '9';
+}
+
+int checkChildren(char *token, FILE *filePointer)
+{
+    for (int i = 0; i < MAX_CHILDREN && token[i] != '\0'; i++)
+    {
+        if (!isDigit(token[i]) && token[i] != '\r' && token[i] != '\n')
+        {
+            fprintf(stderr, "ILLEGAL CHILD");//TODO change to failureExit
+            fclose(filePointer);
+            return EXIT_FAILURE;
+        }
+    }
+    return SUCCESS;
 }
 
 int parseFile(const char *filename)
@@ -88,15 +106,34 @@ int parseFile(const char *filename)
     }
 
     rewind(filePointer);
+    fgets(line, MAX_LINE_LENGTH, filePointer);
+
     int key = 0;
     while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
     {
+        char *token = strtok(line, " ");
+
+        if (strncmp(token, "-", 1) == 0)
+        {
+            key++;
+            fprintf(stderr, "%s", line);
+            continue;
+        }
+
+        while (token != NULL)
+        {
+            if (checkChildren(token, filePointer))
+            {
+                return EXIT_FAILURE;
+            }
+            token = strtok(NULL, " ");
+        }
         key++;
-        fprintf(stderr, "%s", line);
+        fprintf(stderr, "%s\n", line);
     }
 
     fclose(filePointer);
-    return 0;
+    return SUCCESS;
 }
 
 int main(int argc, char *argv[])
