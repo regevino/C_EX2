@@ -12,7 +12,7 @@
 #define LEAF_FLAG (-2)
 struct Vertex
 {
-    int children[MAX_CHILDREN + 1];
+    int neighbors[MAX_CHILDREN + 1];
     int key;
 };
 
@@ -22,7 +22,7 @@ struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct
 {
     for (int k = 0; k < vertexCounter; k++)
     {
-        if (vertices[k]->children[0] == NO_PARENT_FLAG)
+        if (vertices[k]->neighbors[0] == NO_PARENT_FLAG)
         {
             root = vertices[k];
         }
@@ -208,41 +208,41 @@ int processTree(FILE *filePointer, int fstVertex, int secVertex)
     {
         fgets(line, MAX_LINE_LENGTH, filePointer);
 
-        vertices[key] = (struct Vertex *) malloc(sizeof(struct Vertex));
-        if (vertices[key] == NULL)
-        {
-            fprintf(stderr, "MALLOC FAILED");
-            for (int i = 0; i < key; i++)
-            {
-                free(vertices[i]);
-                vertices[i] = NULL;
-            }
-            free(vertices);
-            vertices = NULL;
-            return EXIT_FAILURE;
-        }
+//        vertices[key] = (struct Vertex *) malloc(sizeof(struct Vertex));
+//        if (vertices[key] == NULL)
+//        {
+//            fprintf(stderr, "MALLOC FAILED");
+//            for (int i = 0; i < key; i++)
+//            {
+//                free(vertices[i]);
+//                vertices[i] = NULL;
+//            }
+//            free(vertices);
+//            vertices = NULL;
+//            return EXIT_FAILURE;
+//        }
 
         vertices[key]->key = key;
-        vertices[key]->children[0] = NO_PARENT_FLAG;
+        vertices[key]->neighbors[0] = NO_PARENT_FLAG;
 
         char *token = strtok(line, " ");
 
         //If vertex is a leaf:
         if (strncmp(token, "-", 1) == 0)
         {
-            vertices[key]->children[1] = LEAF_FLAG;
+            vertices[key]->neighbors[1] = LEAF_FLAG;
             continue;
         }
 
-        //Write children of current vertex:
+        //Write neighbors of current vertex:
         int i = 1;
         while (token != NULL)
         {
             int tokenInteger = (int)strtol(token, NULL, 10);
-            vertices[key]->children[i] = tokenInteger;
+            vertices[key]->neighbors[i] = tokenInteger; //TODO check if initialised
 
             //Write current key as father of current child:
-            vertices[tokenInteger]->children[0] = key;
+            vertices[tokenInteger]->neighbors[0] = key;
 
             token = strtok(NULL, " ");
             i++;
@@ -256,7 +256,9 @@ int processTree(FILE *filePointer, int fstVertex, int secVertex)
 
     printDetails(fstVertex, secVertex, vertexCounter, root);
     //Free memory of vertices:
-    destroyVertices(vertexCounter, vertices);//TODO check if need to send pointer to pointer etc.
+    free(vertices);
+    vertices = NULL;
+//    destroyVertices(vertexCounter, vertices);//TODO check if need to send pointer to pointer etc.
     return SUCCESS;
 }
 
