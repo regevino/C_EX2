@@ -10,14 +10,23 @@
 #define SUCCESS 0
 #define NO_PARENT_FLAG (-1)
 #define LEAF_FLAG (-2)
+
+/**
+ *
+ */
 struct Vertex
 {
     int neighbors[MAX_CHILDREN + 1];
     int key;
 };
 
-void printDetails(int fstVertex, int secVertex, int vertexCounter, const struct Vertex *root);
-
+/**
+ *
+ * @param vertexCounter
+ * @param vertices
+ * @param root
+ * @return
+ */
 struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct Vertex *root)
 {
     for (int k = 0; k < vertexCounter; k++)
@@ -30,12 +39,22 @@ struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct
     return root;
 }
 
+/**
+ *
+ * @return
+ */
 int failureExit()
 {
     fprintf(stderr, INVALID_INPUT_MSG);
     return EXIT_FAILURE;
 }
 
+/**
+ *
+ * @param filePointer
+ * @param line
+ * @return
+ */
 int checkVertexNum(FILE *filePointer, char *line)
 {
     int vertexCounter = 0;
@@ -46,24 +65,41 @@ int checkVertexNum(FILE *filePointer, char *line)
     return vertexCounter;
 }
 
+/**
+ *
+ * @param c
+ * @return
+ */
 int isDigit(char c)
 {
     return c >= '0' && c <= '9';
 }
 
+/**
+ *
+ * @param token
+ * @return
+ */
 int checkChildren(char *token)
 {
     for (int i = 0; i < MAX_CHILDREN && token[i] != '\0'; i++)
     {
         if (!isDigit(token[i]) && token[i] != '\r' && token[i] != '\n')
         {
-            fprintf(stderr, "ILLEGAL CHILD");//TODO change to failureExit
+            fprintf(stderr, "ILLEGAL CHILD"); //TODO change to failureExit
             return EXIT_FAILURE;
         }
     }
     return SUCCESS;
 }
 
+/**
+ *
+ * @param checkedTokens
+ * @param token
+ * @param length
+ * @return
+ */
 int isInCheckedTokens(char *checkedTokens[], char *token, int length)
 {
     for (int i = 0; i < length; i++)
@@ -79,30 +115,53 @@ int isInCheckedTokens(char *checkedTokens[], char *token, int length)
 
         if (strncmp(checkedTokens[i], token, MAX_CHILDREN) == 0)
         {
-            fprintf(stderr, "CHILD APPEARS TWICE");//TODO change to failureExit
+            fprintf(stderr, "CHILD APPEARS TWICE"); //TODO change to failureExit
             return EXIT_FAILURE;
         }
     }
     return SUCCESS;
 }
 
-void destroyVertices(int vertexCounter, struct Vertex **vertices)
+/**
+ *
+ * @param fstVertex
+ * @param secVertex
+ * @param vertexCounter
+ * @param root
+ */
+void printDetails(int fstVertex, int secVertex, int vertexCounter, const struct Vertex *root)
 {
-    for (int j = 0; j < vertexCounter; j++)
-    {
-        free(vertices[j]);
-        vertices[j] = NULL;
-    }
-    free(vertices);
-    vertices = NULL;
+	fprintf(stdout, "Root Vertex: %d\n", root->key);
+	fprintf(stdout, "Vertices Count: %d\n", vertexCounter);
+	fprintf(stdout, "Edges Count: %d\n", vertexCounter - 1);
+//    fprintf(stdout, "Length of Minimal Branch: %d\n");
+//    fprintf(stdout, "Length of Maximal Branch: %d\n");
+//    fprintf(stdout, "Diameter Length: %d\n");
+	fprintf(stdout, "Shortest Path Between %d and %d: ", fstVertex, secVertex);
 }
 
+//void destroyVertices(int vertexCounter, struct Vertex **vertices)
+//{
+//    for (int j = 0; j < vertexCounter; j++)
+//    {
+//        free(vertices[j]);
+//        vertices[j] = NULL;
+//    }
+//    free(vertices);
+//    vertices = NULL;
+//}
+
+/**
+ *
+ * @param filePointer
+ * @return
+ */
 int parseFile(FILE *filePointer)
 {
     //Edge case: Check if file exists:
     if (filePointer == NULL)
     {
-        fprintf(stderr, "FILE DOESN'T EXIST OR IS EMPTY");//TODO change to failureExit
+        fprintf(stderr, "FILE DOESN'T EXIST OR IS EMPTY"); //TODO change to failureExit
         return EXIT_FAILURE;
     }
 
@@ -111,7 +170,7 @@ int parseFile(FILE *filePointer)
     char line[MAX_LINE_LENGTH];
     if (fgets(line, MAX_LINE_LENGTH, filePointer) == NULL)
     {
-        fprintf(stderr, "FILE IS EMPTY");//TODO change to failureExit
+        fprintf(stderr, "FILE IS EMPTY"); //TODO change to failureExit
         return EXIT_FAILURE;
     }
 
@@ -120,7 +179,7 @@ int parseFile(FILE *filePointer)
     {
         if (!isDigit(line[i]))
         {
-            fprintf(stderr, "NUMBER OF VERTEXES IS NOT AN INTEGER");//TODO change to failureExit
+            fprintf(stderr, "NUMBER OF VERTEXES IS NOT AN INTEGER"); //TODO change to failureExit
             return EXIT_FAILURE;
         }
     }
@@ -130,7 +189,7 @@ int parseFile(FILE *filePointer)
     //Edge case: Check if vertexNum is 0:
     if (vertexNum == 0)
     {
-        fprintf(stderr, "NUMBER OF VERTEXES IS ZERO");//TODO change to failureExit
+        fprintf(stderr, "NUMBER OF VERTEXES IS ZERO"); //TODO change to failureExit
         return EXIT_FAILURE;
     }
 
@@ -140,7 +199,7 @@ int parseFile(FILE *filePointer)
     if (vertexCounter != vertexNum)
     {
         fprintf(stderr,
-                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER");//TODO change to failureExit
+                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER"); //TODO change to failureExit
         return EXIT_FAILURE;
     }
 
@@ -164,9 +223,9 @@ int parseFile(FILE *filePointer)
         while (token != NULL)
         {
             int tokenInteger = (int)strtol(token, NULL, 10);
-            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i) || tokenInteger == key)//TODO check if token == key
+            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i) || tokenInteger == key)
             {
-                fprintf(stderr, "TOKEN IS KEY");//TODO change to failureExit
+                fprintf(stderr, "TOKEN IS KEY"); //TODO change to failureExit
                 return EXIT_FAILURE;
             }
             checkedTokens[i] = token;
@@ -181,12 +240,19 @@ int parseFile(FILE *filePointer)
     if (tokenCounter != vertexNum)
     {
         fprintf(stderr,
-                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER");//TODO change to failureExit
+                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER"); //TODO change to failureExit
         return EXIT_FAILURE;
     }
     return SUCCESS;
 }
 
+/**
+ *
+ * @param filePointer
+ * @param fstVertex
+ * @param secVertex
+ * @return
+ */
 int processTree(FILE *filePointer, int fstVertex, int secVertex)
 {
     char line[MAX_LINE_LENGTH];
@@ -262,17 +328,12 @@ int processTree(FILE *filePointer, int fstVertex, int secVertex)
     return SUCCESS;
 }
 
-void printDetails(int fstVertex, int secVertex, int vertexCounter, const struct Vertex *root)
-{
-    fprintf(stdout, "Root Vertex: %d\n", root->key);
-    fprintf(stdout, "Vertices Count: %d\n", vertexCounter);
-    fprintf(stdout, "Edges Count: %d\n", vertexCounter - 1);
-    fprintf(stdout, "Length of Minimal Branch: %d\n");
-    fprintf(stdout, "Length of Maximal Branch: %d\n");
-    fprintf(stdout, "Diameter Length: %d\n");
-    fprintf(stdout, "Shortest Path Between %d and %d: ", fstVertex, secVertex);
-}
-
+/**
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char *argv[])
 {
     if (argc != 4)
