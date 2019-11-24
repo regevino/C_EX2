@@ -10,7 +10,9 @@
 #define SUCCESS 0
 #define NO_PARENT_FLAG (-1)
 #define LEAF_FLAG (-2)
-
+#define NOT_VISITED (-1)
+#define FST_VERTEX_PREV (-1)
+#define END_OF_NEIGHBORS (-1)
 /**
  *
  */
@@ -18,6 +20,8 @@ struct Vertex
 {
     int neighbors[MAX_CHILDREN + 1];
     int key;
+    int distance;
+    unsigned int prev;
 };
 
 /**
@@ -27,16 +31,16 @@ struct Vertex
  * @param root
  * @return
  */
-struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct Vertex *root)
+struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct Vertex **root)
 {
     for (int k = 0; k < vertexCounter; k++)
     {
         if (vertices[k]->neighbors[0] == NO_PARENT_FLAG)
         {
-            root = vertices[k];
+            *root = vertices[k];
         }
     }
-    return root;
+    return *root;
 }
 
 /**
@@ -150,6 +154,33 @@ void printDetails(int fstVertex, int secVertex, int vertexCounter, const struct 
 //    free(vertices);
 //    vertices = NULL;
 //}
+
+
+void bfs(struct Vertex *const *vertices, int key, int vertexCounter)
+{
+	for (int i = 0; i < vertexCounter; i++)
+	{
+		vertices[i]->distance = NOT_VISITED;
+	}
+	vertices[key]->distance = 0;
+	vertices[key]->prev = FST_VERTEX_PREV;
+	Queue *queue = allocQueue();
+	enqueue(queue, key);
+	while (!queueIsEmpty(queue))
+	{
+		unsigned int u = dequeue(queue);
+		for (int i = 0; i < MAX_CHILDREN + 1 && vertices[u]->neighbors[i] != END_OF_NEIGHBORS; i++)
+		{
+			int w = vertices[u]->neighbors[i];
+			if (vertices[w]->distance == NOT_VISITED)
+			{
+				enqueue(queue, w);
+				vertices[w]->prev = u;
+				vertices[w]->distance = vertices[u]->distance + 1;
+			}
+		}
+	}
+}
 
 /**
  *
@@ -313,11 +344,12 @@ int processTree(FILE *filePointer, int fstVertex, int secVertex)
             token = strtok(NULL, " ");
             i++;
         }
-    }
+		vertices[key]->neighbors[i] = END_OF_NEIGHBORS;
+	}
 
     //Find root of the tree:
     struct Vertex *root = NULL;
-    root = getRoot(vertexCounter, vertices, root);
+    root = getRoot(vertexCounter, vertices, &root);
 
 
     printDetails(fstVertex, secVertex, vertexCounter, root);
