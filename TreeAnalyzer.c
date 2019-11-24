@@ -8,20 +8,27 @@
 #define MAX_LINE_LENGTH 1025
 #define MAX_CHILDREN 512
 #define SUCCESS 0
-
-#define NO_PARENT_FLAG -1
-#define LEAF_FLAG -2
+#define NO_PARENT_FLAG (-1)
+#define LEAF_FLAG (-2)
 struct Vertex
 {
     int children[MAX_CHILDREN + 1];
     int key;
 };
 
-struct Tree
+void printDetails(int fstVertex, int secVertex, int vertexCounter, const struct Vertex *root);
+
+struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct Vertex *root)
 {
-    struct Vertex **vertices;
-    int vertexCounter;
-};
+    for (int k = 0; k < vertexCounter; k++)
+    {
+        if (vertices[k]->children[0] == NO_PARENT_FLAG)
+        {
+            root = vertices[k];
+        }
+    }
+    return root;
+}
 
 int failureExit()
 {
@@ -77,6 +84,17 @@ int isInCheckedTokens(char *checkedTokens[], char *token, int length)
         }
     }
     return SUCCESS;
+}
+
+void destroyVertices(int vertexCounter, struct Vertex **vertices)
+{
+    for (int j = 0; j < vertexCounter; j++)
+    {
+        free(vertices[j]);
+        vertices[j] = NULL;
+    }
+    free(vertices);
+    vertices = NULL;
 }
 
 int parseFile(FILE *filePointer)
@@ -169,7 +187,7 @@ int parseFile(FILE *filePointer)
     return SUCCESS;
 }
 
-int processTree(FILE *filePointer)
+int processTree(FILE *filePointer, int fstVertex, int secVertex)
 {
     char line[MAX_LINE_LENGTH];
 
@@ -217,39 +235,40 @@ int processTree(FILE *filePointer)
         }
 
         //Write children of current vertex:
-        int i = 0;
+        int i = 1;
         while (token != NULL)
         {
             int tokenInteger = (int)strtol(token, NULL, 10);
             vertices[key]->children[i] = tokenInteger;
+
+            //Write current key as father of current child:
+            vertices[tokenInteger]->children[0] = key;
 
             token = strtok(NULL, " ");
             i++;
         }
     }
 
-    for (int k = 0; k < vertexCounter; k++)
-    {
-        
-    }
+    //Find root of the tree:
+    struct Vertex *root = NULL;
+    root = getRoot(vertexCounter, vertices, root);
 
 
-
-
-
-
-
-
-
+    printDetails(fstVertex, secVertex, vertexCounter, root);
     //Free memory of vertices:
-    for (int j = 0; j < vertexCounter; j++)
-    {
-        free(vertices[j]);
-        vertices[j] = NULL;
-    }
-    free(vertices);
-    vertices = NULL;
+    destroyVertices(vertexCounter, vertices);//TODO check if need to send pointer to pointer etc.
     return SUCCESS;
+}
+
+void printDetails(int fstVertex, int secVertex, int vertexCounter, const struct Vertex *root)
+{
+    fprintf(stdout, "Root Vertex: %d\n", root->key);
+    fprintf(stdout, "Vertices Count: %d\n", vertexCounter);
+    fprintf(stdout, "Edges Count: %d\n", vertexCounter - 1);
+    fprintf(stdout, "Length of Minimal Branch: %d\n");
+    fprintf(stdout, "Length of Maximal Branch: %d\n");
+    fprintf(stdout, "Diameter Length: %d\n");
+    fprintf(stdout, "Shortest Path Between %d and %d: ", fstVertex, secVertex);
 }
 
 int main(int argc, char *argv[])
