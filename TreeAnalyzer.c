@@ -11,8 +11,8 @@
 
 struct Vertex
 {
-    struct Vertex *children[MAX_CHILDREN];
     struct Vertex *father;
+    int children[MAX_CHILDREN];
     int key;
 };
 
@@ -106,7 +106,7 @@ int parseFile(FILE *filePointer)
         }
     }
 
-    int vertexNum = (int)strtol(line, NULL, 10);
+    int vertexNum = (int) strtol(line, NULL, 10);
 
     //Edge case: Check if vertexNum is 0:
     if (vertexNum == 0)
@@ -129,6 +129,7 @@ int parseFile(FILE *filePointer)
     fgets(line, MAX_LINE_LENGTH, filePointer);
 
     int key = 0, tokenCounter = 1;
+    char *checkedTokens[MAX_CHILDREN] = {NULL};
     while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
     {
         char *token = strtok(line, " ");
@@ -141,11 +142,12 @@ int parseFile(FILE *filePointer)
         }
 
         int i = 0;
-        char *checkedTokens[MAX_CHILDREN] = {NULL};
         while (token != NULL)
         {
-            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i))
+            int tokenInteger = (int)strtol(token, NULL, 10);
+            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i) || tokenInteger == key)//TODO check if token == key
             {
+                fprintf(stderr, "TOKEN IS KEY");//TODO change to failureExit
                 return EXIT_FAILURE;
             }
             checkedTokens[i] = token;
@@ -169,11 +171,44 @@ int parseFile(FILE *filePointer)
 void processTree(FILE *filePointer)
 {
     char line[MAX_LINE_LENGTH];
-    struct Tree tree;
 
+    //Initialise array of pointers to vertices:
     fgets(line, MAX_LINE_LENGTH, filePointer);
-    tree.vertexCounter = (int) strtol(line, NULL, 10);
+    int vertexCounter = (int) strtol(line, NULL, 10);
+    struct Vertex **vertices = (struct Vertex **) malloc(vertexCounter * sizeof(struct Vertex *));//TODO FREE!!!
 
+    //Add vertices to array:
+    for (int key = 0; key < vertexCounter; key++)
+    {
+        fgets(line, MAX_LINE_LENGTH, filePointer);
+
+        vertices[key] = (struct Vertex *) malloc(sizeof(struct Vertex));//TODO FREE!!!
+        vertices[key]->key = key;
+
+        char *token = strtok(line, " ");
+
+        //If vertex is a leaf:
+        if (strncmp(token, "-", 1) == 0)
+        {
+            continue;
+        }
+
+        //Write children of current vertex:
+        int i = 0;
+        while (token != NULL)
+        {
+            int tokenInteger = (int)strtol(token, NULL, 10);
+            vertices[key]->children[i] = tokenInteger;
+
+            token = strtok(NULL, " ");
+            i++;
+        }
+    }
+
+    for (int j = 0; j < vertexCounter; j++)
+    {
+
+    }
 }
 
 int main(int argc, char *argv[])
@@ -192,7 +227,7 @@ int main(int argc, char *argv[])
     }
 
     rewind(filePointer);
-    processTree(filePointer);
+//    processTree(filePointer);
     fclose(filePointer);
     return SUCCESS;
 }
