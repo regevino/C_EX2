@@ -9,10 +9,11 @@
 #define MAX_CHILDREN 512
 #define SUCCESS 0
 
+#define NO_PARENT_FLAG -1
+#define LEAF_FLAG -2
 struct Vertex
 {
-    struct Vertex *father;
-    int children[MAX_CHILDREN];
+    int children[MAX_CHILDREN + 1];
     int key;
 };
 
@@ -168,28 +169,50 @@ int parseFile(FILE *filePointer)
     return SUCCESS;
 }
 
-void processTree(FILE *filePointer)
+int processTree(FILE *filePointer)
 {
     char line[MAX_LINE_LENGTH];
 
     //Initialise array of pointers to vertices:
     fgets(line, MAX_LINE_LENGTH, filePointer);
     int vertexCounter = (int) strtol(line, NULL, 10);
-    struct Vertex **vertices = (struct Vertex **) malloc(vertexCounter * sizeof(struct Vertex *));//TODO FREE!!!
+    struct Vertex **vertices = (struct Vertex **) malloc(vertexCounter * sizeof(struct Vertex *));
+    if (vertices == NULL)
+    {
+        fprintf(stderr, "MALLOC FAILED");
+        free(vertices);
+        vertices = NULL;
+        return EXIT_FAILURE;
+    }
 
     //Add vertices to array:
     for (int key = 0; key < vertexCounter; key++)
     {
         fgets(line, MAX_LINE_LENGTH, filePointer);
 
-        vertices[key] = (struct Vertex *) malloc(sizeof(struct Vertex));//TODO FREE!!!
+        vertices[key] = (struct Vertex *) malloc(sizeof(struct Vertex));
+        if (vertices[key] == NULL)
+        {
+            fprintf(stderr, "MALLOC FAILED");
+            for (int i = 0; i < key; i++)
+            {
+                free(vertices[i]);
+                vertices[i] = NULL;
+            }
+            free(vertices);
+            vertices = NULL;
+            return EXIT_FAILURE;
+        }
+
         vertices[key]->key = key;
+        vertices[key]->children[0] = NO_PARENT_FLAG;
 
         char *token = strtok(line, " ");
 
         //If vertex is a leaf:
         if (strncmp(token, "-", 1) == 0)
         {
+            vertices[key]->children[1] = LEAF_FLAG;
             continue;
         }
 
@@ -205,10 +228,28 @@ void processTree(FILE *filePointer)
         }
     }
 
+    for (int k = 0; k < vertexCounter; k++)
+    {
+        
+    }
+
+
+
+
+
+
+
+
+
+    //Free memory of vertices:
     for (int j = 0; j < vertexCounter; j++)
     {
-
+        free(vertices[j]);
+        vertices[j] = NULL;
     }
+    free(vertices);
+    vertices = NULL;
+    return SUCCESS;
 }
 
 int main(int argc, char *argv[])
@@ -227,7 +268,11 @@ int main(int argc, char *argv[])
     }
 
     rewind(filePointer);
-//    processTree(filePointer);
+//    if (processTree(filePointer))
+//    {
+//        fclose(filePointer);
+//        return EXIT_FAILURE;
+//    }
     fclose(filePointer);
     return SUCCESS;
 }
