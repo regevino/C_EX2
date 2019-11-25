@@ -159,7 +159,7 @@ int checkChildren(char *token)
     {
         if (!isDigit(token[i]) && token[i] != '\r' && token[i] != '\n')
         {
-            fprintf(stderr, "ILLEGAL CHILD"); //TODO change to failureExit
+			fprintf(stderr, INVALID_INPUT_MSG);
             return EXIT_FAILURE;
         }
     }
@@ -188,7 +188,7 @@ int isInCheckedTokens(char *checkedTokens[], char *token, int length)
 
         if (strncmp(checkedTokens[i], token, MAX_CHILDREN) == 0)
         {
-            fprintf(stderr, "CHILD APPEARS TWICE"); //TODO change to failureExit
+			fprintf(stderr, INVALID_INPUT_MSG);
             return EXIT_FAILURE;
         }
     }
@@ -202,7 +202,8 @@ int isInCheckedTokens(char *checkedTokens[], char *token, int length)
  * @param vertexCounter
  * @param root
  */
-void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const struct Vertex *root, int minDistance, int maxDistance, int diameter, int *path, int distance)
+void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const struct Vertex *root,
+				  int minDistance, int maxDistance, int diameter, int *path, int distance)
 {
 	fprintf(stdout, "Root Vertex: %d\n", root->key);
 	fprintf(stdout, "Vertices Count: %d\n", vertexCounter);
@@ -237,7 +238,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     //Edge case: Check if file exists:
     if (filePointer == NULL)
     {
-        fprintf(stderr, "FILE DOESN'T EXIST OR IS EMPTY"); //TODO change to failureExit
+		fprintf(stderr, INVALID_INPUT_MSG);
         return EXIT_FAILURE;
     }
 
@@ -246,7 +247,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     char line[MAX_LINE_LENGTH];
     if (fgets(line, MAX_LINE_LENGTH, filePointer) == NULL)
     {
-        fprintf(stderr, "FILE IS EMPTY"); //TODO change to failureExit
+		fprintf(stderr, INVALID_INPUT_MSG);
         return EXIT_FAILURE;
     }
 
@@ -255,7 +256,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     {
         if (!isDigit(line[i]))
         {
-            fprintf(stderr, "NUMBER OF VERTEXES IS NOT AN INTEGER"); //TODO change to failureExit
+			fprintf(stderr, INVALID_INPUT_MSG);
             return EXIT_FAILURE;
         }
     }
@@ -265,7 +266,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     //Edge case: Check if vertexNum is 0:
     if (vertexNum == 0)
     {
-        fprintf(stderr, "NUMBER OF VERTEXES IS ZERO"); //TODO change to failureExit
+		fprintf(stderr, INVALID_INPUT_MSG);
         return EXIT_FAILURE;
     }
 
@@ -274,8 +275,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
 
     if (vertexCounter != vertexNum)
     {
-        fprintf(stderr,
-                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER"); //TODO change to failureExit
+		fprintf(stderr, INVALID_INPUT_MSG);
         return EXIT_FAILURE;
     }
 
@@ -284,6 +284,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
 
     int key = 0, tokenCounter = 1, i = 0;
     char *checkedTokens[MAX_CHILDREN];
+    char currentToken[MAX_CHILDREN];
     while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
     {
         char *token = strtok(line, " ");
@@ -297,39 +298,25 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
         while (token != NULL)
         {
             int tokenInteger = (int)strtol(token, NULL, 10);
-            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i) || tokenInteger == key)
+            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i)
+            	|| tokenInteger == key)
             {
-                fprintf(stderr, "TOKEN IS KEY"); //TODO change to failureExit
+				fprintf(stderr, INVALID_INPUT_MSG);
                 return EXIT_FAILURE;
             }
-			checkedTokens[i] = (char *) malloc((strlen(token)) * sizeof(char));
-            if (checkedTokens[i] == NULL)
-			{
-				fprintf(stderr, "MALLOC FAILED"); //TODO change to failureExit
-				for (int j = 0; j < i; j++)
-				{
-					free(checkedTokens[j]);
-					checkedTokens[j] = NULL;
-				}
-				return EXIT_FAILURE;
-			}
-            strcpy(checkedTokens[i], token);
+
+            strncpy(currentToken, token, (int) strlen(token));
+			checkedTokens[i] = currentToken;
             token = strtok(NULL, " ");
             tokenCounter++;
             i++;
         }
         key++;
     }
-	for (int k = 0; k < MAX_CHILDREN && checkedTokens[k] != NULL; k++)
-	{
-		free(checkedTokens[k]);
-		checkedTokens[k] = NULL;
-	}
 
     if (tokenCounter != vertexNum)
     {
-        fprintf(stderr,
-                "NUMBER OF VERTEXES DOESN'T MATCH SPECIFIED NUMBER"); //TODO change to failureExit
+		fprintf(stderr, INVALID_INPUT_MSG);
         return EXIT_FAILURE;
     }
 
@@ -339,7 +326,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     {
         if (!isDigit(fstVertex[j]))
         {
-            fprintf(stderr, "FIRST GIVEN VERTEX IS NOT AN INTEGER"); //TODO change to failureExit
+			fprintf(stderr, INVALID_INPUT_MSG);
             return EXIT_FAILURE;
         }
     }
@@ -347,7 +334,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     {
         if (!isDigit(secVertex[j]))
         {
-            fprintf(stderr, "SECOND GIVEN VERTEX IS NOT AN INTEGER"); //TODO change to failureExit
+			fprintf(stderr, INVALID_INPUT_MSG);
             return EXIT_FAILURE;
         }
     }
@@ -355,7 +342,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     int vertex2 = (int)strtol(secVertex, NULL, 10);
     if (vertex1 < 0 || vertex1 >= vertexNum || vertex2 < 0 || vertex2 >= vertexNum)
     {
-        fprintf(stderr, "GIVEN VERTICES DO NOT EXIST IN TREE"); //TODO change to failureExit
+		fprintf(stderr, INVALID_INPUT_MSG);
         return EXIT_FAILURE;
     }
     return SUCCESS;
@@ -378,7 +365,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     struct Vertex **vertices = (struct Vertex **) malloc(vertexCounter * sizeof(struct Vertex *));
     if (vertices == NULL)
     {
-        fprintf(stderr, "MALLOC FAILED"); //TODO change to failureExit
+		fprintf(stderr, INVALID_INPUT_MSG);
         free(vertices);
         return EXIT_FAILURE;
     }
@@ -388,7 +375,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         vertices[k] = (struct Vertex *) malloc(sizeof(struct Vertex));
         if (vertices[k] == NULL)
         {
-            fprintf(stderr, "MALLOC FAILED");
+			fprintf(stderr, INVALID_INPUT_MSG);
             for (int i = 0; i < k; i++)
             {
                 free(vertices[i]);
@@ -443,7 +430,12 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         printDetails(fstVertex, secVertex, vertexCounter, root, 0, 0, 0, path, 0);
 
         //Free memory of vertices:
-        destroyVertices(vertexCounter, vertices);
+//        destroyVertices(vertexCounter, vertices);
+		for (int j = 0; j < vertexCounter; j++)
+		{
+			free(vertices[j]);
+			vertices[j] = NULL;
+		}
         free(vertices);
         vertices = NULL;
         return SUCCESS;
@@ -484,7 +476,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     int *path = (int *) malloc((vertices[vertex1]->distance + 1) * sizeof(int));
     if (path == NULL)
     {
-        fprintf(stderr, "MALLOC FAILED");
+		fprintf(stderr, INVALID_INPUT_MSG);
         free(path);
         for (int i = 0; i < vertexCounter; i++)
         {
@@ -503,10 +495,16 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         prev = vertices[prev]->prev;
     }
 
-    printDetails(fstVertex, secVertex, vertexCounter, root, minDistance, maxDistance, diameter, path, vertices[vertex1]->distance + 1);
+    printDetails(fstVertex, secVertex, vertexCounter, root, minDistance,
+	     		 maxDistance, diameter, path, vertices[vertex1]->distance + 1);
     //Free memory of vertices:
     free(path);
-    destroyVertices(vertexCounter, vertices);
+	for (int j = 0; j < vertexCounter; j++)
+	{
+		free(vertices[j]);
+		vertices[j] = NULL;
+	}
+//    destroyVertices(vertexCounter, vertices);
     free(vertices);
     vertices = NULL;
     return SUCCESS;
