@@ -8,7 +8,7 @@
 #define MAX_LINE_LENGTH 1025
 #define MAX_CHILDREN 512
 #define SUCCESS 0
-#define LEAF_FLAG (-2)
+#define LEAF_FLAG (-1)
 #define NOT_VISITED (-1)
 #define FST_VERTEX_PREV (-1)
 #define END_OF_NEIGHBORS (-1)
@@ -17,11 +17,11 @@
  */
 struct Vertex
 {
-    int neighbors[MAX_CHILDREN + 1];
+    int children[MAX_CHILDREN + 1];
     struct Vertex *father;
     int key;
     int distance;
-    unsigned int prev;
+    int prev;
 };
 
 /**
@@ -42,6 +42,33 @@ struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct
     }
     return *root;
 }
+
+/**
+ *
+ * @param vertexCounter
+ * @param vertices
+ * @param maxDistance
+ * @param keyMaxDistance
+ * @return
+ */
+int getDiameter(int vertexCounter, struct Vertex *const *vertices,
+                int maxDistance, int keyMaxDistance)
+{
+    int subMaxDistance = 0;
+    for (int l = 0; l < vertexCounter; l++)
+    {
+        if (vertices[l]->children[0] == LEAF_FLAG && vertices[l]->key != keyMaxDistance)
+        {
+            if (vertices[l]->distance > subMaxDistance)
+            {
+                subMaxDistance = vertices[l]->distance;
+            }
+        }
+    }
+
+    return maxDistance + subMaxDistance;
+}
+
 
 /**
  *
@@ -133,15 +160,20 @@ int isInCheckedTokens(char *checkedTokens[], char *token, int length)
  * @param vertexCounter
  * @param root
  */
-void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const struct Vertex *root)
+void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const struct Vertex *root, int minDistance, int maxDistance, int diameter, int *path, int distance)
 {
 	fprintf(stdout, "Root Vertex: %d\n", root->key);
 	fprintf(stdout, "Vertices Count: %d\n", vertexCounter);
 	fprintf(stdout, "Edges Count: %d\n", vertexCounter - 1);
-//    fprintf(stdout, "Length of Minimal Branch: %d\n");
-//    fprintf(stdout, "Length of Maximal Branch: %d\n");
-//    fprintf(stdout, "Diameter Length: %d\n");
+    fprintf(stdout, "Length of Minimal Branch: %d\n", minDistance);
+    fprintf(stdout, "Length of Maximal Branch: %d\n", maxDistance);
+    fprintf(stdout, "Diameter Length: %d\n", diameter);
 	fprintf(stdout, "Shortest Path Between %s and %s: ", fstVertex, secVertex);
+    for (int i = 0; i < distance - 1; i++)
+    {
+        fprintf(stdout, "%d ", path[i]);
+    }
+    fprintf(stdout, "%d\n", path[distance]);
 }
 
 void destroyVertices(int vertexCounter, struct Vertex **vertices)
@@ -151,8 +183,6 @@ void destroyVertices(int vertexCounter, struct Vertex **vertices)
         free(vertices[j]);
         vertices[j] = NULL;
     }
-    free(vertices);
-    vertices = NULL;
 }
 
 /**
@@ -161,7 +191,7 @@ void destroyVertices(int vertexCounter, struct Vertex **vertices)
  * @param key
  * @param vertexCounter
  */
-void bfs(struct Vertex *const *vertices, int key, int vertexCounter)
+void BFS(struct Vertex *const *vertices, int key, int vertexCounter)
 {
 	for (int i = 0; i < vertexCounter; i++)
 	{
@@ -174,28 +204,26 @@ void bfs(struct Vertex *const *vertices, int key, int vertexCounter)
 	while (!queueIsEmpty(queue))
 	{
 		unsigned int u = dequeue(queue);
-		for (int i = 0; i < MAX_CHILDREN + 1 && vertices[u]->neighbors[i] != END_OF_NEIGHBORS; i++)
+		for (int i = 0; i < MAX_CHILDREN + 1 && vertices[u]->children[i] != END_OF_NEIGHBORS; i++)
 		{
-			int w = vertices[u]->neighbors[i];
+			int w = vertices[u]->children[i];
 			if (w == LEAF_FLAG)
             {
 			    if (vertices[u]->father->distance == NOT_VISITED)
                 {
                     enqueue(queue, vertices[u]->father->key);
-                    vertices[u]->father->prev = u;
+                    vertices[u]->father->prev = (int)u;
                     vertices[u]->father->distance = vertices[u]->distance + 1;
                 }
-            } else
+            } else if (vertices[w]->distance == NOT_VISITED)
               {
-                  if (vertices[w]->distance == NOT_VISITED)
-                  {
                       enqueue(queue, w);
-                      vertices[w]->prev = u;
+                      vertices[w]->prev = (int)u;
                       vertices[w]->distance = vertices[u]->distance + 1;
-                  }
               }
 		}
 	}
+    freeQueue(&queue);
 }
 
 /**
@@ -333,7 +361,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     struct Vertex **vertices = (struct Vertex **) malloc(vertexCounter * sizeof(struct Vertex *));
     if (vertices == NULL)
     {
-        fprintf(stderr, "MALLOC FAILED");
+        fprintf(stderr, "MALLOC FAILED"); //TODO change to failureExit
         free(vertices);
         return EXIT_FAILURE;
     }
@@ -367,7 +395,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         //If vertex is a leaf:
         if (strncmp(token, "-", 1) == 0)
         {
-            vertices[key]->neighbors[0] = LEAF_FLAG;
+            vertices[key]->children[0] = LEAF_FLAG;
             continue;
         }
 
@@ -376,7 +404,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         while (token != NULL)
         {
             int tokenInteger = (int)strtol(token, NULL, 10);
-            vertices[key]->neighbors[i] = tokenInteger;
+            vertices[key]->children[i] = tokenInteger;
 
             //Write current key as father of current child:
             vertices[tokenInteger]->father = vertices[key];
@@ -384,24 +412,76 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
             token = strtok(NULL, " ");
             i++;
         }
-		vertices[key]->neighbors[i] = END_OF_NEIGHBORS;
+		vertices[key]->children[i] = END_OF_NEIGHBORS;
 	}
 
     //Find root of the tree:
     struct Vertex *root = NULL;
     root = getRoot(vertexCounter, vertices, &root);
 
-    bfs(vertices, root->key, vertexCounter);
-    for (int j = 0; j < vertexCounter; j++)
+    //Edge case: A tree of one vertex:
+    if (vertexCounter == 1)
     {
-        fprintf(stderr, "%d\n", vertices[j]->distance);
+        int path[] = {root->key};
+        printDetails(fstVertex, secVertex, vertexCounter, root, 0, 0, 0, path, 0);
+
+        //Free memory of vertices:
+        destroyVertices(vertexCounter, vertices);
+        free(vertices);
+        vertices = NULL;
+        return SUCCESS;
     }
 
-//    printDetails(fstVertex, secVertex, vertexCounter, root);
+    BFS(vertices, root->key, vertexCounter);
+    int maxDistance = 1, minDistance = 1, keyMaxDistance = 0;
+    for (int j = 0; j < vertexCounter; j++)
+    {
+        if (vertices[j]->children[0] == LEAF_FLAG)
+        {
+            if (vertices[j]->distance > maxDistance)
+            {
+                maxDistance = vertices[j]->distance;
+            }
+            else if (vertices[j]->distance < minDistance)
+            {
+                minDistance = vertices[j]->distance;
+            }
+        }
+    }
+
+    int diameter = getDiameter(vertexCounter, vertices, maxDistance, keyMaxDistance);
+
+    int vertex1 = (int) strtol(fstVertex, NULL, 10);
+    int vertex2 = (int) strtol(secVertex, NULL, 10);
+    BFS(vertices, vertex2, vertexCounter);
+    int *path = (int *) malloc((vertices[vertex1]->distance) * sizeof(int));
+    if (path == NULL)
+    {
+        fprintf(stderr, "MALLOC FAILED");
+        free(path);
+        for (int i = 0; i < vertexCounter; i++)
+        {
+            free(vertices[i]);
+            vertices[i] = NULL;
+        }
+        free(vertices);
+        vertices = NULL;
+        return EXIT_FAILURE;
+    }
+    path[0] = vertex1;
+    int prev = vertices[vertex1]->prev;
+    for (int l = 1; l < vertices[vertex1]->distance; l++)
+    {
+        path[l] = prev;
+        prev = vertices[prev]->prev;
+    }
+
+    printDetails(fstVertex, secVertex, vertexCounter, root, minDistance, maxDistance, diameter, path, vertices[vertex1]->distance);
     //Free memory of vertices:
+    free(path);
+    destroyVertices(vertexCounter, vertices);
     free(vertices);
     vertices = NULL;
-    destroyVertices(vertexCounter, vertices);//TODO check if need to send pointer to pointer etc.
     return SUCCESS;
 }
 
