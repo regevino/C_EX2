@@ -45,28 +45,70 @@ struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct
 
 /**
  *
+ * @param vertices
+ * @param key
+ * @param vertexCounter
+ */
+void BFS(struct Vertex *const *vertices, int key, int vertexCounter)
+{
+	for (int i = 0; i < vertexCounter; i++)
+	{
+		vertices[i]->distance = NOT_VISITED;
+	}
+	vertices[key]->distance = 0;
+	vertices[key]->prev = FST_VERTEX_PREV;
+	Queue *queue = allocQueue();
+	enqueue(queue, key);
+	while (!queueIsEmpty(queue))
+	{
+		unsigned int u = dequeue(queue);
+		for (int i = 0; i < MAX_CHILDREN + 1 && vertices[u]->children[i] != END_OF_NEIGHBORS; i++)
+		{
+			int w = vertices[u]->children[i];
+			if (vertices[w]->distance == NOT_VISITED)
+			{
+				enqueue(queue, w);
+				vertices[w]->prev = (int)u;
+				vertices[w]->distance = vertices[u]->distance + 1;
+			}
+		}
+		if (vertices[u]->father != NULL)
+		{
+			if (vertices[u]->father->distance == NOT_VISITED)
+			{
+				enqueue(queue, vertices[u]->father->key);
+				vertices[u]->father->prev = (int)u;
+				vertices[u]->father->distance = vertices[u]->distance + 1;
+			}
+		}
+	}
+	freeQueue(&queue);
+}
+
+/**
+ *
  * @param vertexCounter
  * @param vertices
  * @param maxDistance
  * @param keyMaxDistance
  * @return
  */
-int getDiameter(int vertexCounter, struct Vertex *const *vertices,
-                int maxDistance, int keyMaxDistance)
+int getDiameter(int vertexCounter, struct Vertex *const *vertices, int keyMaxDistance)
 {
-    int subMaxDistance = 0;
-    for (int l = 0; l < vertexCounter; l++)
-    {
-        if (vertices[l]->children[0] == LEAF_FLAG && vertices[l]->key != keyMaxDistance)
-        {
-            if (vertices[l]->distance > subMaxDistance)
-            {
-                subMaxDistance = vertices[l]->distance;
-            }
-        }
-    }
+	int maxDistance = 0;
+	BFS(vertices, keyMaxDistance, vertexCounter);
+	for (int i = 0; i < vertexCounter; i++)
+	{
+		if (vertices[i]->children[0] == LEAF_FLAG)
+		{
+			if (vertices[i]->distance > maxDistance)
+			{
+				maxDistance = vertices[i]->distance;
+			}
+		}
+	}
 
-    return maxDistance + subMaxDistance;
+    return maxDistance;
 }
 
 
@@ -187,48 +229,6 @@ void destroyVertices(int vertexCounter, struct Vertex **vertices)
 
 /**
  *
- * @param vertices
- * @param key
- * @param vertexCounter
- */
-void BFS(struct Vertex *const *vertices, int key, int vertexCounter)
-{
-	for (int i = 0; i < vertexCounter; i++)
-	{
-		vertices[i]->distance = NOT_VISITED;
-	}
-	vertices[key]->distance = 0;
-	vertices[key]->prev = FST_VERTEX_PREV;
-	Queue *queue = allocQueue();
-	enqueue(queue, key);
-	while (!queueIsEmpty(queue))
-	{
-		unsigned int u = dequeue(queue);
-		for (int i = 0; i < MAX_CHILDREN + 1 && vertices[u]->children[i] != END_OF_NEIGHBORS; i++)
-		{
-			int w = vertices[u]->children[i];
-			if (vertices[w]->distance == NOT_VISITED)
-			{
-                      enqueue(queue, w);
-                      vertices[w]->prev = (int)u;
-                      vertices[w]->distance = vertices[u]->distance + 1;
-			}
-		}
-		if (vertices[u]->father != NULL)
-        {
-            if (vertices[u]->father->distance == NOT_VISITED)
-            {
-                enqueue(queue, vertices[u]->father->key);
-                vertices[u]->father->prev = (int)u;
-                vertices[u]->father->distance = vertices[u]->distance + 1;
-            }
-        }
-	}
-    freeQueue(&queue);
-}
-
-/**
- *
  * @param filePointer
  * @return
  */
@@ -283,7 +283,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     fgets(line, MAX_LINE_LENGTH, filePointer);
 
     int key = 0, tokenCounter = 1, i = 0;
-    char *checkedTokens[MAX_CHILDREN] = {NULL};
+    char *checkedTokens[MAX_CHILDREN];
     while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
     {
         char *token = strtok(line, " ");
@@ -302,13 +302,29 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
                 fprintf(stderr, "TOKEN IS KEY"); //TODO change to failureExit
                 return EXIT_FAILURE;
             }
-            checkedTokens[i] = token;
+			checkedTokens[i] = (char *) malloc((strlen(token)) * sizeof(char));
+            if (checkedTokens[i] == NULL)
+			{
+				fprintf(stderr, "MALLOC FAILED"); //TODO change to failureExit
+				for (int j = 0; j < i; j++)
+				{
+					free(checkedTokens[j]);
+					checkedTokens[j] = NULL;
+				}
+				return EXIT_FAILURE;
+			}
+            strcpy(checkedTokens[i], token);
             token = strtok(NULL, " ");
             tokenCounter++;
             i++;
         }
         key++;
     }
+	for (int k = 0; k < MAX_CHILDREN && checkedTokens[k] != NULL; k++)
+	{
+		free(checkedTokens[k]);
+		checkedTokens[k] = NULL;
+	}
 
     if (tokenCounter != vertexNum)
     {
@@ -433,8 +449,9 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         return SUCCESS;
     }
 
+    //Find maximal and minimal branches:
     BFS(vertices, root->key, vertexCounter);
-    int maxDistance = 1, minDistance = 1, keyMaxDistance = 0;
+    int maxDistance = 1, keyMaxDistance = 0;
     for (int j = 0; j < vertexCounter; j++)
     {
         if (vertices[j]->children[0] == LEAF_FLAG)
@@ -442,15 +459,24 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
             if (vertices[j]->distance > maxDistance)
             {
                 maxDistance = vertices[j]->distance;
-            }
-            else if (vertices[j]->distance < minDistance)
-            {
-                minDistance = vertices[j]->distance;
+                keyMaxDistance = j;
             }
         }
     }
 
-    int diameter = getDiameter(vertexCounter, vertices, maxDistance, keyMaxDistance);
+	int minDistance = maxDistance;
+	for (int m = 0; m < vertexCounter; m++)
+	{
+		if (vertices[m]->children[0] == LEAF_FLAG)
+		{
+			if (vertices[m]->distance < minDistance)
+            {
+                minDistance = vertices[m]->distance;
+            }
+		}
+	}
+
+    int diameter = getDiameter(vertexCounter, vertices, keyMaxDistance);
 
     int vertex1 = (int) strtol(fstVertex, NULL, 10);
     int vertex2 = (int) strtol(secVertex, NULL, 10);
