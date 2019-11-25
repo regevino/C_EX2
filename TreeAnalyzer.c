@@ -173,7 +173,7 @@ void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const str
     {
         fprintf(stdout, "%d ", path[i]);
     }
-    fprintf(stdout, "%d\n", path[distance]);
+    fprintf(stdout, "%d\n", path[distance - 1]);
 }
 
 void destroyVertices(int vertexCounter, struct Vertex **vertices)
@@ -207,21 +207,22 @@ void BFS(struct Vertex *const *vertices, int key, int vertexCounter)
 		for (int i = 0; i < MAX_CHILDREN + 1 && vertices[u]->children[i] != END_OF_NEIGHBORS; i++)
 		{
 			int w = vertices[u]->children[i];
-			if (w == LEAF_FLAG)
-            {
-			    if (vertices[u]->father->distance == NOT_VISITED)
-                {
-                    enqueue(queue, vertices[u]->father->key);
-                    vertices[u]->father->prev = (int)u;
-                    vertices[u]->father->distance = vertices[u]->distance + 1;
-                }
-            } else if (vertices[w]->distance == NOT_VISITED)
-              {
+			if (vertices[w]->distance == NOT_VISITED)
+			{
                       enqueue(queue, w);
                       vertices[w]->prev = (int)u;
                       vertices[w]->distance = vertices[u]->distance + 1;
-              }
+			}
 		}
+		if (vertices[u]->father != NULL)
+        {
+            if (vertices[u]->father->distance == NOT_VISITED)
+            {
+                enqueue(queue, vertices[u]->father->key);
+                vertices[u]->father->prev = (int)u;
+                vertices[u]->father->distance = vertices[u]->distance + 1;
+            }
+        }
 	}
     freeQueue(&queue);
 }
@@ -454,7 +455,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     int vertex1 = (int) strtol(fstVertex, NULL, 10);
     int vertex2 = (int) strtol(secVertex, NULL, 10);
     BFS(vertices, vertex2, vertexCounter);
-    int *path = (int *) malloc((vertices[vertex1]->distance) * sizeof(int));
+    int *path = (int *) malloc((vertices[vertex1]->distance + 1) * sizeof(int));
     if (path == NULL)
     {
         fprintf(stderr, "MALLOC FAILED");
@@ -470,13 +471,13 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     }
     path[0] = vertex1;
     int prev = vertices[vertex1]->prev;
-    for (int l = 1; l < vertices[vertex1]->distance; l++)
+    for (int l = 1; l < vertices[vertex1]->distance + 1; l++)
     {
         path[l] = prev;
         prev = vertices[prev]->prev;
     }
 
-    printDetails(fstVertex, secVertex, vertexCounter, root, minDistance, maxDistance, diameter, path, vertices[vertex1]->distance);
+    printDetails(fstVertex, secVertex, vertexCounter, root, minDistance, maxDistance, diameter, path, vertices[vertex1]->distance + 1);
     //Free memory of vertices:
     free(path);
     destroyVertices(vertexCounter, vertices);
