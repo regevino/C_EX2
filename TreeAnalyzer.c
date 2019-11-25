@@ -159,7 +159,6 @@ int checkChildren(char *token)
     {
         if (!isDigit(token[i]) && token[i] != '\r' && token[i] != '\n')
         {
-			fprintf(stderr, INVALID_INPUT_MSG);
             return EXIT_FAILURE;
         }
     }
@@ -188,7 +187,6 @@ int isInCheckedTokens(char *checkedTokens[], char *token, int length)
 
         if (strncmp(checkedTokens[i], token, MAX_CHILDREN) == 0)
         {
-			fprintf(stderr, INVALID_INPUT_MSG);
             return EXIT_FAILURE;
         }
     }
@@ -385,6 +383,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
             vertices = NULL;
             return EXIT_FAILURE;
         }
+        vertices[k]->father = NULL;
     }
 
     //Add vertices to array:
