@@ -99,27 +99,13 @@ int getDiameter(int vertexCounter, struct Vertex *const *vertices, int keyMaxDis
 	BFS(vertices, keyMaxDistance, vertexCounter);
 	for (int i = 0; i < vertexCounter; i++)
 	{
-		if (vertices[i]->children[0] == LEAF_FLAG)
+		if (vertices[i]->distance > maxDistance)
 		{
-			if (vertices[i]->distance > maxDistance)
-			{
-				maxDistance = vertices[i]->distance;
-			}
+			maxDistance = vertices[i]->distance;
 		}
 	}
 
     return maxDistance;
-}
-
-
-/**
- *
- * @return
- */
-int failureExit()
-{
-    fprintf(stderr, INVALID_INPUT_MSG);
-    return EXIT_FAILURE;
 }
 
 /**
@@ -172,7 +158,7 @@ int checkChildren(char *token)
  * @param length
  * @return
  */
-int isInCheckedTokens(char *checkedTokens[], char *token, int length)
+int isInCheckedTokens(char checkedTokens[MAX_CHILDREN][MAX_CHILDREN], char *token, int length)
 {
     for (int i = 0; i < length; i++)
     {
@@ -185,7 +171,7 @@ int isInCheckedTokens(char *checkedTokens[], char *token, int length)
             token[strlen(token) - 1] = 0;
         }
 
-        if (strncmp(checkedTokens[i], token, MAX_CHILDREN) == 0)
+        if (strcmp(checkedTokens[i], token) == 0)
         {
             return EXIT_FAILURE;
         }
@@ -210,11 +196,17 @@ void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const str
     fprintf(stdout, "Length of Maximal Branch: %d\n", maxDistance);
     fprintf(stdout, "Diameter Length: %d\n", diameter);
 	fprintf(stdout, "Shortest Path Between %s and %s: ", fstVertex, secVertex);
-    for (int i = 0; i < distance - 1; i++)
-    {
-        fprintf(stdout, "%d ", path[i]);
-    }
-    fprintf(stdout, "%d\n", path[distance - 1]);
+	if (distance == 0)
+	{
+		fprintf(stdout, "%d\n", path[distance]);
+	} else
+	  {
+		for (int i = 0; i < distance - 1; i++)
+		{
+			fprintf(stdout, "%d ", path[i]);
+		}
+		fprintf(stdout, "%d\n", path[distance - 1]);
+	  }
 }
 
 void destroyVertices(int vertexCounter, struct Vertex **vertices)
@@ -281,8 +273,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     fgets(line, MAX_LINE_LENGTH, filePointer);
 
     int key = 0, tokenCounter = 1, i = 0;
-    char *checkedTokens[MAX_CHILDREN];
-    char currentToken[MAX_CHILDREN];
+    char checkedTokens[MAX_CHILDREN][MAX_CHILDREN] = {'\0'};
     while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
     {
         char *token = strtok(line, " ");
@@ -296,15 +287,14 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
         while (token != NULL)
         {
             int tokenInteger = (int)strtol(token, NULL, 10);
-            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, i)
+            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, tokenCounter)
             	|| tokenInteger == key)
             {
 				fprintf(stderr, INVALID_INPUT_MSG);
                 return EXIT_FAILURE;
             }
 
-            strncpy(currentToken, token, (int) strlen(token));
-			checkedTokens[i] = currentToken;
+            strncpy(checkedTokens[i], token, (int) strlen(token));
             token = strtok(NULL, " ");
             tokenCounter++;
             i++;
@@ -426,7 +416,8 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     if (vertexCounter == 1)
     {
         int path[] = {root->key};
-        printDetails(fstVertex, secVertex, vertexCounter, root, 0, 0, 0, path, 0);
+        printDetails(fstVertex, secVertex, vertexCounter,
+        		root, 0, 0, 0, path, 0);
 
         //Free memory of vertices:
 //        destroyVertices(vertexCounter, vertices);
