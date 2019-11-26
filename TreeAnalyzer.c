@@ -13,7 +13,7 @@
 #define FST_VERTEX_PREV (-1)
 #define END_OF_NEIGHBORS (-1)
 /**
- *
+ * Represents a vertex in the tree
  */
 struct Vertex
 {
@@ -25,11 +25,11 @@ struct Vertex
 };
 
 /**
- *
- * @param vertexCounter
- * @param vertices
- * @param root
- * @return
+ * Gets the root of the tree
+ * @param vertexCounter the number of vertices in the tree
+ * @param vertices the list of vertices of the tree
+ * @param root a pointer that will hold the address of the tree's root
+ * @return a pointer to the root vertex of the tree
  */
 struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct Vertex **root)
 {
@@ -44,10 +44,11 @@ struct Vertex *getRoot(int vertexCounter, struct Vertex *const *vertices, struct
 }
 
 /**
- *
- * @param vertices
- * @param key
- * @param vertexCounter
+ * An implementation of the BFS algorithm
+ * used to find distances of all vertices from a given vertex
+ * @param vertices the list of vertices of the tree
+ * @param key the algorithm calculates the distances of all vertices from the vertex with this key
+ * @param vertexCounter the number of vertices in the tree
  */
 void BFS(struct Vertex *const *vertices, int key, int vertexCounter)
 {
@@ -87,11 +88,10 @@ void BFS(struct Vertex *const *vertices, int key, int vertexCounter)
 
 /**
  *
- * @param vertexCounter
- * @param vertices
- * @param maxDistance
- * @param keyMaxDistance
- * @return
+ * @param vertexCounter the number of vertices in the tree
+ * @param vertices the list of vertices of the tree
+ * @param keyMaxDistance the key of the vertex which has the maximal distance from the tree's root
+ * @return the diameter of the tree
  */
 int getDiameter(int vertexCounter, struct Vertex *const *vertices, int keyMaxDistance)
 {
@@ -109,10 +109,10 @@ int getDiameter(int vertexCounter, struct Vertex *const *vertices, int keyMaxDis
 }
 
 /**
- *
- * @param filePointer
- * @param line
- * @return
+ * Calculates the number of vertices that appear in the file
+ * @param filePointer a pointer to the file that is given to the program
+ * @param line a string that holds the current line in the file
+ * @return the number of vertices that appear in the file
  */
 int checkVertexNum(FILE *filePointer, char *line)
 {
@@ -125,9 +125,9 @@ int checkVertexNum(FILE *filePointer, char *line)
 }
 
 /**
- *
- * @param c
- * @return
+ * Checks if a char represents a digit
+ * @param c the char to be checked
+ * @return true if c is a char
  */
 int isDigit(char c)
 {
@@ -135,11 +135,11 @@ int isDigit(char c)
 }
 
 /**
- *
- * @param token
- * @return
+ * Checks if a token is a whole positive number
+ * @param token the token to be checked
+ * @return true if token is a whole positive number
  */
-int checkChildren(char *token)
+int isPosInt(char *token)
 {
     for (int i = 0; i < MAX_CHILDREN && token[i] != '\0'; i++)
     {
@@ -152,20 +152,22 @@ int checkChildren(char *token)
 }
 
 /**
- *
- * @param checkedTokens
- * @param token
- * @param length
- * @return
+ * Checks if a token already appeared before in the file
+ * @param checkedTokens the list of tokens that have appeared already in the file
+ * @param token the token to be checked
+ * @param tokenCounter the number of tokens that have appeared already in the file
+ * @return true if token appeared already in the file
  */
-int isInCheckedTokens(char checkedTokens[MAX_CHILDREN][MAX_CHILDREN], char *token, int length)
+int isInCheckedTokens(char checkedTokens[MAX_CHILDREN][MAX_CHILDREN], char *token, int tokenCounter)
 {
-    for (int i = 0; i < length; i++)
+    for (int i = 0; i < tokenCounter; i++)
     {
+    	//Token might appear at end of line:
         if (token[strlen(token) - 1] == '\n')
         {
             token[strlen(token) - 1] = 0;
         }
+        //For Windows:
         if (token[strlen(token) - 1] == '\r')
         {
             token[strlen(token) - 1] = 0;
@@ -180,11 +182,17 @@ int isInCheckedTokens(char checkedTokens[MAX_CHILDREN][MAX_CHILDREN], char *toke
 }
 
 /**
- *
- * @param fstVertex
- * @param secVertex
- * @param vertexCounter
- * @param root
+ * Prints the details that the program should output
+ * @param fstVertex the first vertex the program received
+ * @param secVertex the second vertex the program received
+ * @param vertexCounter the number of vertices in the tree
+ * @param root the root of the tree
+ * @param minDistance the minimal distance between the root and another vertex in the tree
+ * @param maxDistance the maximal distance between the root and another vertex in the tree
+ * @param diameter the length of the longest path in the tree
+ * @param path an array that holds the keys of vertices on the path
+ * 		  between the two vertices the program received
+ * @param distance the distance between the two vertices the program received
  */
 void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const struct Vertex *root,
 				  int minDistance, int maxDistance, int diameter, int *path, int distance)
@@ -196,6 +204,8 @@ void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const str
     fprintf(stdout, "Length of Maximal Branch: %d\n", maxDistance);
     fprintf(stdout, "Diameter Length: %d\n", diameter);
 	fprintf(stdout, "Shortest Path Between %s and %s: ", fstVertex, secVertex);
+
+	//Edge case: only one vertex in the tree:
 	if (distance == 0)
 	{
 		fprintf(stdout, "%d\n", path[distance]);
@@ -209,6 +219,11 @@ void printDetails(char *fstVertex, char *secVertex, int vertexCounter, const str
 	  }
 }
 
+/**
+ * Frees the memory the program allocated for the pointers to the vertices
+ * @param vertexCounter the number of vertices in the tree
+ * @param vertices the list of vertices of the tree
+ */
 void destroyVertices(int vertexCounter, struct Vertex **vertices)
 {
     for (int j = 0; j < vertexCounter; j++)
@@ -219,9 +234,11 @@ void destroyVertices(int vertexCounter, struct Vertex **vertices)
 }
 
 /**
- *
- * @param filePointer
- * @return
+ * Checks if the input to the program is valid
+ * @param filePointer a pointer to the file the program received
+ * @param fstVertex a pointer to the first vertex the program received
+ * @param secVertex a pointer to the second vertex the program received
+ * @return 0 if the input is valid, 1 otherwise
  */
 int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
 {
@@ -233,7 +250,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
     }
 
     //Edge case: Check if file is empty.
-    //If not then get number of vertexes from file:
+    //If not then get number of vertices from file:
     char line[MAX_LINE_LENGTH];
     if (fgets(line, MAX_LINE_LENGTH, filePointer) == NULL)
     {
@@ -241,7 +258,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
         return EXIT_FAILURE;
     }
 
-    //Edge case: Check if number of vertexes is a whole number:
+    //Edge case: Check if number of vertices is a whole number:
     for (int i = 0; i < MAX_LINE_LENGTH && line[i] != '\r' && line[i] != '\n'; i++)
     {
         if (!isDigit(line[i]))
@@ -260,7 +277,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
         return EXIT_FAILURE;
     }
 
-    //Edge case: Check if vertexNum matches number of vertexes:
+    //Edge case: Check if vertexNum matches number of vertices:
     int vertexCounter = checkVertexNum(filePointer, line);
 
     if (vertexCounter != vertexNum)
@@ -269,15 +286,17 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
         return EXIT_FAILURE;
     }
 
+    //Check vertices in file:
     rewind(filePointer);
     fgets(line, MAX_LINE_LENGTH, filePointer);
 
-    int key = 0, tokenCounter = 1, i = 0;
+    int key = 0, tokenCounter = 1;
     char checkedTokens[MAX_CHILDREN][MAX_CHILDREN] = {'\0'};
     while (fgets(line, MAX_LINE_LENGTH, filePointer) != NULL)
     {
         char *token = strtok(line, " ");
 
+        //If the line represents a leaf:
         if (strncmp(token, "-", 1) == 0)
         {
             key++;
@@ -287,17 +306,20 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
         while (token != NULL)
         {
             int tokenInteger = (int)strtol(token, NULL, 10);
-            if (checkChildren(token) || isInCheckedTokens(checkedTokens, token, tokenCounter)
-            	|| tokenInteger == key)
+
+            //Check if token is a valid number, appeared already or if it is equal to current key:
+            if (isPosInt(token) || isInCheckedTokens(checkedTokens, token, tokenCounter)
+				|| tokenInteger == key)
             {
 				fprintf(stderr, INVALID_INPUT_MSG);
                 return EXIT_FAILURE;
             }
 
-            strncpy(checkedTokens[i], token, (int) strlen(token));
-            token = strtok(NULL, " ");
-            tokenCounter++;
-            i++;
+            //Store the token in the next available cell in the list of checked tokens:
+            strncpy(checkedTokens[tokenCounter], token, (int) strlen(token));
+
+			tokenCounter++;
+			token = strtok(NULL, " ");
         }
         key++;
     }
@@ -310,6 +332,7 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
 
     //Check if given vertices exist and if they are legal:
 
+    //Check if the given vertices are valid numbers:
     for (int j = 0; j < vertexNum && fstVertex[j] != '\0'; j++)
     {
         if (!isDigit(fstVertex[j]))
@@ -326,6 +349,8 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
             return EXIT_FAILURE;
         }
     }
+
+    //Check if given vertices appear in the tree:
     int vertex1 = (int)strtol(fstVertex, NULL, 10);
     int vertex2 = (int)strtol(secVertex, NULL, 10);
     if (vertex1 < 0 || vertex1 >= vertexNum || vertex2 < 0 || vertex2 >= vertexNum)
@@ -337,11 +362,12 @@ int parseFile(FILE *filePointer, char *fstVertex, char *secVertex)
 }
 
 /**
- *
- * @param filePointer
- * @param fstVertex
- * @param secVertex
- * @return
+ * Builds the tree according to specifications given in the file
+ * and output the relevant output messages
+ * @param filePointer a pointer to the file the program received
+ * @param fstVertex a pointer to the first vertex the program received
+ * @param secVertex a pointer to the second vertex the program received
+ * @return 0 if the processing succeeded, 1 otherwise
  */
 int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
 {
@@ -351,6 +377,8 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     fgets(line, MAX_LINE_LENGTH, filePointer);
     int vertexCounter = (int) strtol(line, NULL, 10);
     struct Vertex **vertices = (struct Vertex **) malloc(vertexCounter * sizeof(struct Vertex *));
+
+    //Check if allocation succeeded:
     if (vertices == NULL)
     {
 		fprintf(stderr, INVALID_INPUT_MSG);
@@ -360,10 +388,15 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
 
     for (int k = 0; k < vertexCounter; k++)
     {
+		//Initialise a pointer to current vertex:
         vertices[k] = (struct Vertex *) malloc(sizeof(struct Vertex));
+
+		//Check if allocation succeeded:
         if (vertices[k] == NULL)
         {
 			fprintf(stderr, INVALID_INPUT_MSG);
+
+			//Free memory of vertices that were already allocated and of the list of vertices:
             for (int i = 0; i < k; i++)
             {
                 free(vertices[i]);
@@ -373,6 +406,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
             vertices = NULL;
             return EXIT_FAILURE;
         }
+
         vertices[k]->father = NULL;
     }
 
@@ -419,19 +453,14 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         printDetails(fstVertex, secVertex, vertexCounter,
         		root, 0, 0, 0, path, 0);
 
-        //Free memory of vertices:
-//        destroyVertices(vertexCounter, vertices);
-		for (int j = 0; j < vertexCounter; j++)
-		{
-			free(vertices[j]);
-			vertices[j] = NULL;
-		}
+        //Free memory of vertex:
+        destroyVertices(vertexCounter, vertices);
         free(vertices);
         vertices = NULL;
         return SUCCESS;
     }
 
-    //Find maximal and minimal branches:
+    //Find maximal branch:
     BFS(vertices, root->key, vertexCounter);
     int maxDistance = 1, keyMaxDistance = 0;
     for (int j = 0; j < vertexCounter; j++)
@@ -446,6 +475,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         }
     }
 
+    //Find minimal branch:
 	int minDistance = maxDistance;
 	for (int m = 0; m < vertexCounter; m++)
 	{
@@ -461,13 +491,20 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     int diameter = getDiameter(vertexCounter, vertices, keyMaxDistance);
 
     int vertex1 = (int) strtol(fstVertex, NULL, 10);
-    int vertex2 = (int) strtol(secVertex, NULL, 10);
-    BFS(vertices, vertex2, vertexCounter);
+	int vertex2 = (int) strtol(secVertex, NULL, 10);
+
+	//Calculate distances between the second given vertex to other vertices:
+	BFS(vertices, vertex2, vertexCounter);
+
     int *path = (int *) malloc((vertices[vertex1]->distance + 1) * sizeof(int));
+
+	//Check if allocation succeeded:
     if (path == NULL)
     {
 		fprintf(stderr, INVALID_INPUT_MSG);
         free(path);
+
+		//Free memory of vertices that were already allocated and of the list of vertices:
         for (int i = 0; i < vertexCounter; i++)
         {
             free(vertices[i]);
@@ -477,6 +514,8 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
         vertices = NULL;
         return EXIT_FAILURE;
     }
+
+	//Find path between the two given vertices and its length:
     path[0] = vertex1;
     int prev = vertices[vertex1]->prev;
     for (int l = 1; l < vertices[vertex1]->distance + 1; l++)
@@ -487,24 +526,20 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
 
     printDetails(fstVertex, secVertex, vertexCounter, root, minDistance,
 	     		 maxDistance, diameter, path, vertices[vertex1]->distance + 1);
-    //Free memory of vertices:
+
+    //Free memory:
     free(path);
-	for (int j = 0; j < vertexCounter; j++)
-	{
-		free(vertices[j]);
-		vertices[j] = NULL;
-	}
-//    destroyVertices(vertexCounter, vertices);
+    destroyVertices(vertexCounter, vertices);
     free(vertices);
     vertices = NULL;
     return SUCCESS;
 }
 
 /**
- *
- * @param argc
- * @param argv
- * @return
+ * Runs the program TreeAnalyzer
+ * @param argc the number of arguments the program received
+ * @param argv the arguments the program received
+ * @return 0 if program ended successfully, 1 otherwise
  */
 int main(int argc, char *argv[])
 {
