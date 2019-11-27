@@ -12,6 +12,7 @@
 #define NOT_VISITED (-1)
 #define FST_VERTEX_PREV (-1)
 #define END_OF_NEIGHBORS (-1)
+#define MALLOC_FAILURE_MSG "Memory allocation failed\n"
 /**
  * Represents a vertex in the tree
  */
@@ -381,7 +382,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
     //Check if allocation succeeded:
     if (vertices == NULL)
     {
-		fprintf(stderr, INVALID_INPUT_MSG);
+		fprintf(stderr, MALLOC_FAILURE_MSG);
         free(vertices);
         return EXIT_FAILURE;
     }
@@ -394,7 +395,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
 		//Check if allocation succeeded:
         if (vertices[k] == NULL)
         {
-			fprintf(stderr, INVALID_INPUT_MSG);
+			fprintf(stderr, MALLOC_FAILURE_MSG);
 
 			//Free memory of vertices that were already allocated and of the list of vertices:
             for (int i = 0; i < k; i++)
@@ -501,7 +502,7 @@ int processTree(FILE *filePointer, char *fstVertex, char *secVertex)
 	//Check if allocation succeeded:
     if (path == NULL)
     {
-		fprintf(stderr, INVALID_INPUT_MSG);
+		fprintf(stderr, MALLOC_FAILURE_MSG);
         free(path);
 
 		//Free memory of vertices that were already allocated and of the list of vertices:
